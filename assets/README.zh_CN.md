@@ -15,6 +15,12 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+| 文件 | 尺寸与格式 | 用途与来源 |
+| --- | --- | --- |
+| [`fonts/axe_king_font_16.c`](fonts/axe_king_font_16.c) | 16 px，4 bpp，LVGL 9.5 PLAIN 位图 | 斧王游戏正文。文泉驿微米黑子集（Apache-2.0 或带字体例外的 GPL-3.0）。由 `tools/gen_axe_font.py` 生成，源字库文件不入库。字形位图约占 15 KB Flash。 |
+| [`fonts/axe_king_font_24.c`](fonts/axe_king_font_24.c) | 24 px，4 bpp，LVGL 9.5 PLAIN 位图 | 标题和命中行。字族、许可和生成方式与 16 px 子集相同。字形位图约占 32 KB Flash。 |
+| [`fonts/axe_king_inventory.txt`](fonts/axe_king_inventory.txt) | 每行一个 `U+XXXX` | 游戏字符串所需码点加上可打印 ASCII。`tests/test_axe_glyphs.py` 用它核对两种字号。U+9F98 故意不包含。 |
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。

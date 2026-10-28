@@ -178,7 +178,7 @@ git switch -c feature/my-passport-app
 ```text
 components/bsp/include/  BSP 公开 API 与 bsp_pins.h 硬件事实
 components/bsp/src/      显示、按键、音频、电池、共享 I2C 实现
-main/                    最小菜单、LVGL UI 与独立硬件演示页
+main/                    斧王小游戏的界面与状态；基线 demo 源文件仍供 host 测试使用
 tests/                   可脱离硬件运行的轻量逻辑测试源
 tools/                   本地与 CI 共用的验证及固件校验脚本
 docs/                    项目说明、变更记录、工程/协作规范与设计参考
@@ -203,6 +203,7 @@ LICENSE                  仓库许可证
 | [AI 技能](../skills/README.zh_CN.md) | 开发、环境准备、构建、真机测试与故障诊断 |
 | [硬件资料](hardware-design/README.zh_CN.md) | 板卡事实、接口边界、验收清单与排障 |
 | [中文字体](development/engineering/lvgl-chinese-fonts.zh_CN.md) | 字形覆盖、控件字体选择，以及中文空白排查 |
+| [飞哥玩斧王](development/axe-king.zh_CN.md) | 离线三键小游戏、操作说明与中文字体子集 |
 | [Wi-Fi 配网](development/engineering/wifi-provisioning.zh_CN.md) | 蓝牙配网实现参考与配套小程序 |
 | [社区作品与经验](reference/README.zh_CN.md) | `docs/reference/<username>/` 下的应用档案和可复用知识 |
 | [参与贡献](contribution/README.zh_CN.md) | 文档、提交与 Pull Request 约定 |

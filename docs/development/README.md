@@ -21,6 +21,10 @@ This directory contains AI Passport engineering rules and reusable workflows, gr
 - [lvgl-chinese-fonts.md](engineering/lvgl-chinese-fonts.md): step-by-step CJK configuration, font generation/linking, fallback examples, glyph checks, and troubleshooting.
 - [wifi-provisioning.md](engineering/wifi-provisioning.md): Bluetooth-based Wi-Fi setup using the BLUFI reference branch, the companion mini program, and integration checks.
 
+## Application
+
+- [axe-king.md](axe-king.md): offline Axe King mini-game screens, controls, and the CJK font subset.
+
 ## CI
 
 - [CI-validation.md](ci/CI-validation.md): pull-request and main-branch checks.
