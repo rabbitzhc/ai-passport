@@ -1,16 +1,16 @@
 idf_component_register(
     SRCS "main.c"
-         "demo_navigation.c"
-         "ui_pixel.c"
-         "ui_pixel_math.c"
-         "demo_display.c"
-         "demo_button.c"
-         "demo_audio.c"
-         "demo_battery.c"
-         "demo_radio.c"
-         "demo_wifi.c"
-         "demo_ble.c"
-         "demo_low_power.c"
+         "axe_logic.c"
+         "axe_ui.c"
+         "../assets/fonts/axe_king_font_16.c"
+         "../assets/fonts/axe_king_font_24.c"
+         "../assets/images/axe_king_bead_64.c"
+         "../assets/images/axe_king_bead_96.c"
+         "../assets/images/axe_king_hands_96.c"
+         "../assets/images/axe_king_cry_96.c"
+         "../assets/images/axe_king_cute_96.c"
+         "../assets/images/axe_king_shades_96.c"
+         "../assets/images/axe_king_teeth_96.c"
     INCLUDE_DIRS "."
-    REQUIRES bsp bt esp_event esp_hw_support esp_netif esp_timer esp_wifi nvs_flash
+    REQUIRES bsp esp_timer esp_hw_support
 )

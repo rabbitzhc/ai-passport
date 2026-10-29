@@ -15,6 +15,12 @@
 - 添加字库前评估 Flash 与内部 RAM 影响；ESP32-C3 无 PSRAM。
 - 不提交许可不允许分发的字库。
 
+| 文件 | 尺寸与格式 | 用途与来源 |
+| --- | --- | --- |
+| [`fonts/axe_king_font_16.c`](fonts/axe_king_font_16.c) | 16 px，4 bpp，LVGL 9.5 PLAIN 位图 | 斧王游戏正文。文泉驿微米黑子集（Apache-2.0 或带字体例外的 GPL-3.0）。由 `tools/gen_axe_font.py` 生成，源字库文件不入库。字形位图约占 15 KB Flash。 |
+| [`fonts/axe_king_font_24.c`](fonts/axe_king_font_24.c) | 24 px，4 bpp，LVGL 9.5 PLAIN 位图 | 标题和命中行。字族、许可和生成方式与 16 px 子集相同。字形位图约占 32 KB Flash。 |
+| [`fonts/axe_king_inventory.txt`](fonts/axe_king_inventory.txt) | 每行一个 `U+XXXX` | 游戏字符串所需码点加上可打印 ASCII。`tests/test_axe_glyphs.py` 用它核对两种字号。U+9F98 故意不包含。 |
+
 ## 图片（images）
 
 可复用的源图与生成的显示资产放在 `images/`。
@@ -25,6 +31,15 @@
 | [`images/readme-hardware-specs.png`](images/readme-hardware-specs.png) | 2172 × 724，PNG RGBA | 保留为可选技术参考图，不再用于首页主视觉。于 2026-09-17 使用内置图像生成工具为本仓库生成；已根据文档中的硬件能力契约核对图中的六项标签与参数。 |
 | [`images/logo-wordmark.png`](images/logo-wordmark.png) | 1648 × 336，PNG RGBA | 从仓库原始 `images/logo.png` 中精确裁切并去除背景的黑色字标；用于中英文项目 README 的浅色主题。 |
 | [`images/logo-wordmark-dark.png`](images/logo-wordmark-dark.png) | 1648 × 336，PNG RGBA | 提取字标的白色版本；README 使用 `<picture>` 在 GitHub 深色主题下显示。 |
+| [`images/axe-king-bead.png`](images/axe-king-bead.png) | 用户提供的 PNG | 封面、记位、瞄准和结算用的标准拼豆头像。运行时用生成的 RGB565A8，不解码这张源图。 |
+| [`images/axe-king-hands.jpg`](images/axe-king-hands.jpg) | 用户提供的 JPEG | 0 命中的结果头像。 |
+| [`images/axe-king-cry.jpg`](images/axe-king-cry.jpg) | 用户提供的 JPEG | 1–3 命中的结果头像。 |
+| [`images/axe-king-cute.jpg`](images/axe-king-cute.jpg) | 用户提供的 JPEG | 4–6 命中的结果头像。 |
+| [`images/axe-king-shades.jpg`](images/axe-king-shades.jpg) | 用户提供的 JPEG | 7–9 命中的结果头像。 |
+| [`images/axe-king-teeth.jpg`](images/axe-king-teeth.jpg) | 用户提供的 JPEG | 10 命中的结果头像。 |
+| [`images/axe_king_bead_64.c`](images/axe_king_bead_64.c) | 64 × 64，LVGL 9 RGB565A8 | 对局精灵，约 12 KB。由 `tools/gen_axe_avatar.py` 生成。 |
+| [`images/axe_king_bead_96.c`](images/axe_king_bead_96.c) | 96 × 96，LVGL 9 RGB565A8 | 封面精灵，约 27 KB。 |
+| [`images/axe_king_hands_96.c`](images/axe_king_hands_96.c) | 96 × 96，LVGL 9 RGB565A8 | 结果精灵。哭泣、卖萌、墨镜和露齿文件格式相同。 |
 
 - 使用描述性命名，并记录尺寸、像素格式、转换步骤与目标路径。
 - 优先采用适合 240 × 320 RGB565 显示的格式，并纳入 Flash 与内部 RAM 考量。

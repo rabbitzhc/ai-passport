@@ -19,6 +19,10 @@ CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
 
 # --- LVGL ---
 CONFIG_LV_COLOR_DEPTH_16=y
+# The game UI is UTF-8 Chinese. Placeholders stay enabled so a missing glyph
+# remains visible instead of turning into a blank.
+CONFIG_LV_TXT_ENC_UTF8=y
+CONFIG_LV_USE_FONT_PLACEHOLDER=y
 # 20 ms display refresh period targets up to 50 FPS when rendering and SPI
 # transfer complete within the same budget.
 CONFIG_LV_DEF_REFR_PERIOD=20

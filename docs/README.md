@@ -183,7 +183,7 @@ in `main`. Keep that boundary when building your own firmware.
 ```text
 components/bsp/include/  Public BSP APIs and bsp_pins.h hardware facts
 components/bsp/src/      Display, button, audio, battery, and shared-I2C implementations
-main/                    Minimal menu, LVGL UI, and independent hardware demo pages
+main/                    Axe King game UI and state; baseline demo sources remain for host tests
 tests/                   Lightweight logic tests that can run without hardware
 tools/                   Shared local/CI validation and firmware verification scripts
 docs/                    Project docs, changelog, engineering/contribution rules, and design references
@@ -209,6 +209,7 @@ provide reference material. Choose the entry that matches your task.
 | [AI skills](../skills/README.md) | Development, environment setup, builds, device testing, and debugging |
 | [Hardware](hardware-design/README.md) | Board facts, interface boundaries, acceptance checklists, and troubleshooting |
 | [Chinese fonts](development/engineering/lvgl-chinese-fonts.md) | Glyph coverage, widget font selection, and blank-text troubleshooting |
+| [Axe King game](development/axe-king.md) | Offline three-button mini-game, controls, and CJK font subset |
 | [Wi-Fi provisioning](development/engineering/wifi-provisioning.md) | Bluetooth provisioning reference and companion mini program |
 | [Community projects and experience](reference/README.md) | Playbooks and reusable knowledge under `docs/reference/<username>/` |
 | [Contributing](contribution/README.md) | Documentation, commits, and pull-request conventions |
