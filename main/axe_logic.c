@@ -255,25 +255,41 @@ void axe_round_begin(axe_round_t *round, axe_rng_t *rng, const axe_field_t *fiel
     memset(round, 0, sizeof(*round));
     int width = field->max_x - field->min_x + 1;
     int height = field->max_y - field->min_y + 1;
-    bool placed = false;
+    int64_t best = -1;
+    axe_point_t best_king = {field->min_x, field->min_y};
+    axe_point_t best_camp = {field->max_x, field->max_y};
     if (width > 0 && height > 0) {
-        for (int attempt = 0; attempt < 48; attempt++) {
-            round->king.x = field->min_x + rng_below(rng, width);
-            round->king.y = field->min_y + rng_below(rng, height);
-            round->camp.x = field->min_x + rng_below(rng, width);
-            round->camp.y = field->min_y + rng_below(rng, height);
-            if (dist2_at_least(round->king.x, round->king.y, round->camp.x, round->camp.y,
-                               field->min_center_gap)) {
-                placed = true;
-                break;
+        for (int attempt = 0; attempt < 64; attempt++) {
+            int kx = field->min_x + rng_below(rng, width);
+            int ky = field->min_y + rng_below(rng, height);
+            int cx = field->min_x + rng_below(rng, width);
+            int cy = field->min_y + rng_below(rng, height);
+            int64_t dx = (int64_t)kx - cx;
+            int64_t dy = (int64_t)ky - cy;
+            int64_t dist2 = dx * dx + dy * dy;
+            if (dist2 < (int64_t)field->min_center_gap * field->min_center_gap) continue;
+            if (dist2 > best) {
+                best = dist2;
+                best_king.x = kx;
+                best_king.y = ky;
+                best_camp.x = cx;
+                best_camp.y = cy;
             }
         }
     }
-    if (!placed) {
-        round->king.x = field->min_x;
-        round->king.y = field->min_y;
-        round->camp.x = field->max_x;
-        round->camp.y = field->max_y;
+    if (best >= 0) {
+        round->king = best_king;
+        round->camp = best_camp;
+    } else {
+        /* Two different corners still sit inside the field and far apart. */
+        static const int corner_x[4] = {0, 1, 0, 1};
+        static const int corner_y[4] = {0, 0, 1, 1};
+        int king_corner = rng_below(rng, 4);
+        int camp_corner = (king_corner + 1 + rng_below(rng, 3)) & 3;
+        round->king.x = corner_x[king_corner] ? field->max_x : field->min_x;
+        round->king.y = corner_y[king_corner] ? field->max_y : field->min_y;
+        round->camp.x = corner_x[camp_corner] ? field->max_x : field->min_x;
+        round->camp.y = corner_y[camp_corner] ? field->max_y : field->min_y;
     }
     place_minions(round->minions, round->camp, rng_below(rng, 360));
     round->comment_index = rng_below(rng, AXE_COMMENT_VARIANTS);

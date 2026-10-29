@@ -23,8 +23,10 @@ LV_IMAGE_DECLARE(axe_king_teeth_96);
 
 #define AXE_Q_PLAY 64
 #define AXE_Q_COVER 96
-#define AXE_SPARKS 6
-#define AXE_IMPACT_MS 480
+#define AXE_SPARKS 8
+#define AXE_BOLTS 3
+#define AXE_CRACKS 5
+#define AXE_IMPACT_MS 760
 
 static const char *TAG = "axe_ui";
 
@@ -50,8 +52,10 @@ static lv_obj_t *s_minions[AXE_MINION_COUNT];
 static lv_obj_t *s_threat;
 static lv_obj_t *s_strike;
 static lv_obj_t *s_flash;
-static lv_obj_t *s_burst[2];
+static lv_obj_t *s_burst[3];
 static lv_obj_t *s_spark[AXE_SPARKS];
+static lv_obj_t *s_bolt[AXE_BOLTS];
+static lv_obj_t *s_crack[AXE_CRACKS];
 static lv_obj_t *s_batt_shell;
 static lv_obj_t *s_batt_fill;
 static lv_obj_t *s_batt_nub;
@@ -284,8 +288,10 @@ static void forget_dynamic(void) {
     s_threat = NULL;
     s_strike = NULL;
     s_flash = NULL;
-    for (int i = 0; i < 2; i++) s_burst[i] = NULL;
+    for (int i = 0; i < 3; i++) s_burst[i] = NULL;
     for (int i = 0; i < AXE_SPARKS; i++) s_spark[i] = NULL;
+    for (int i = 0; i < AXE_BOLTS; i++) s_bolt[i] = NULL;
+    for (int i = 0; i < AXE_CRACKS; i++) s_crack[i] = NULL;
     for (int i = 0; i < AXE_ARROW_DOTS; i++) s_arrow[i] = NULL;
     for (int i = 0; i < AXE_MINION_COUNT; i++) s_minions[i] = NULL;
 }
@@ -339,10 +345,18 @@ static void build_resolve(void) {
     lv_obj_set_style_bg_opa(s_flash, LV_OPA_TRANSP, 0);
     build_minions(s_layer, COL_MINION);
     s_strike = king_ring(s_layer, s_round.king.x, s_round.king.y, LV_OPA_30);
-    for (int i = 0; i < 2; i++) {
-        s_burst[i] = ring(s_layer, s_round.landing_x, s_round.landing_y, 8, COL_GOLD,
-                          LV_OPA_TRANSP, 2);
+    for (int i = 0; i < 3; i++) {
+        s_burst[i] = ring(s_layer, s_round.landing_x, s_round.landing_y, 8, i == 2 ? 0xFFD0A0 : COL_GOLD,
+                          LV_OPA_TRANSP, 3);
         lv_obj_add_flag(s_burst[i], LV_OBJ_FLAG_HIDDEN);
+    }
+    for (int i = 0; i < AXE_BOLTS; i++) {
+        s_bolt[i] = block(s_layer, 20 + i * 70, 30, 4, 180, 1, 0xF4FBFF);
+        lv_obj_add_flag(s_bolt[i], LV_OBJ_FLAG_HIDDEN);
+    }
+    for (int i = 0; i < AXE_CRACKS; i++) {
+        s_crack[i] = block(s_layer, s_round.landing_x, s_round.landing_y, 6, 36, 0, 0xE8EEF4);
+        lv_obj_add_flag(s_crack[i], LV_OBJ_FLAG_HIDDEN);
     }
     for (int i = 0; i < AXE_SPARKS; i++) {
         s_spark[i] = dot(s_layer, s_round.landing_x, s_round.landing_y, 4, 0xFFE7A0);
@@ -443,39 +457,80 @@ static void play_impact(void) {
     int t = s_impact_ms;
     int span = AXE_IMPACT_MS;
     if (t > span) t = span;
-    int shake = 0;
-    if (t < 240) {
-        static const int kick[] = {4, -4, 3, -2, 1, 0};
-        shake = kick[(t / 40) % 6];
-    }
+    static const int kick_x[] = {10, -9, 8, -7, 6, -5, 4, -3, 2, -2, 1, 0};
+    static const int kick_y[] = {-6, 7, -5, 4, -3, 3, -2, 2, -1, 1, 0, 0};
+    int slot = t < 440 ? (t / 40) % 12 : 11;
+    if (s_layer) lv_obj_set_pos(s_layer, kick_x[slot], kick_y[slot]);
+    int shake = kick_x[slot] / 2;
     place_ring(s_strike, s_round.landing_x + shake, s_round.landing_y, AXE_CLUSTER_R);
     if (s_flash) {
-        int flash = t < 80 ? 90 : (t < 200 ? 40 - (t - 80) / 6 : 0);
+        int flash = 0;
+        uint32_t color = 0xFFFFFF;
+        if (t < 70) {
+            flash = 210;
+        } else if (t < 160) {
+            flash = 120;
+            color = 0xFF5A3A;
+        } else if (t < 280) {
+            flash = ((t / 40) % 2) ? 90 : 30;
+            color = 0xFF3B2A;
+        } else if (t < 460) {
+            flash = 50 - (t - 280) / 8;
+            color = 0xFF6A3A;
+        }
         if (flash < 0) flash = 0;
+        lv_obj_set_style_bg_color(s_flash, lv_color_hex(color), 0);
         lv_obj_set_style_bg_opa(s_flash, (lv_opa_t)flash, 0);
     }
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < AXE_BOLTS; i++) {
+        if (!s_bolt[i]) continue;
+        int show = t < 220 && ((t / 40 + i) % 2) == 0;
+        if (!show) {
+            lv_obj_add_flag(s_bolt[i], LV_OBJ_FLAG_HIDDEN);
+            continue;
+        }
+        lv_obj_remove_flag(s_bolt[i], LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_pos(s_bolt[i], 16 + i * 78 + (t / 40) * 6, 8 + i * 18);
+        lv_obj_set_size(s_bolt[i], (i == 1) ? 3 : 5, 200 - i * 24);
+    }
+    for (int i = 0; i < AXE_CRACKS; i++) {
+        if (!s_crack[i]) continue;
+        if (t < 60 || t > 520) {
+            lv_obj_add_flag(s_crack[i], LV_OBJ_FLAG_HIDDEN);
+            continue;
+        }
+        int x = 0;
+        int y = 0;
+        axe_landing(s_round.landing_x, s_round.landing_y, 24 + i * 72, 18 + i * 8, &x, &y);
+        lv_obj_set_pos(s_crack[i], x, y);
+        lv_obj_set_size(s_crack[i], (i % 2) ? 34 : 8, (i % 2) ? 6 : 40);
+        lv_obj_remove_flag(s_crack[i], LV_OBJ_FLAG_HIDDEN);
+        int opa = 230 - (t - 60) / 2;
+        if (opa < 0) opa = 0;
+        lv_obj_set_style_bg_opa(s_crack[i], (lv_opa_t)opa, 0);
+    }
+    for (int i = 0; i < 3; i++) {
         if (!s_burst[i]) continue;
-        int local = t - i * 80;
+        int local = t - i * 70;
         if (local < 0) {
             lv_obj_add_flag(s_burst[i], LV_OBJ_FLAG_HIDDEN);
             continue;
         }
-        int radius = 10 + (local * 50) / span;
+        int radius = 8 + (local * (70 + i * 16)) / span;
         place_ring(s_burst[i], s_round.landing_x, s_round.landing_y, radius);
-        int opa = 220 - (local * 220) / span;
+        int opa = 240 - (local * 240) / span;
         if (opa < 0) opa = 0;
-        lv_obj_set_style_bg_opa(s_burst[i], LV_OPA_TRANSP, 0);
+        lv_obj_set_style_bg_opa(s_burst[i], (lv_opa_t)(opa / 5), 0);
         lv_obj_set_style_border_opa(s_burst[i], (lv_opa_t)opa, 0);
     }
     for (int i = 0; i < AXE_SPARKS; i++) {
         if (!s_spark[i]) continue;
-        int reach = (t * (18 + i * 4)) / span;
+        int reach = (t * (28 + i * 6)) / span;
         int x = s_round.landing_x;
         int y = s_round.landing_y;
-        axe_landing(s_round.landing_x, s_round.landing_y, i * 60, reach, &x, &y);
-        move_circle(s_spark[i], x, y, i % 2 ? 5 : 3);
-        if (t > span - 80) lv_obj_add_flag(s_spark[i], LV_OBJ_FLAG_HIDDEN);
+        axe_landing(s_round.landing_x, s_round.landing_y, i * 45, reach, &x, &y);
+        move_circle(s_spark[i], x, y, (i % 3) + 3);
+        if (t > span - 100) lv_obj_add_flag(s_spark[i], LV_OBJ_FLAG_HIDDEN);
     }
 }
 
@@ -503,7 +558,7 @@ static void on_tick(lv_timer_t *timer) {
         }
         break;
     case AXE_PHASE_AIM_DISTANCE: {
-        s_dist_tick++;
+        s_dist_tick += AXE_DISTANCE_ADVANCE;
         int distance = axe_oscillating_distance(s_max_distance, s_dist_tick, AXE_DISTANCE_PERIOD);
         layout_arrow(s_round.king.x, s_round.king.y, s_round.angle_deg, distance);
         break;
@@ -526,6 +581,8 @@ static void on_tick(lv_timer_t *timer) {
             if (s_impact_ms >= AXE_IMPACT_MS) {
                 s_impact_done = true;
                 s_elapsed_ms = 0;
+                if (s_layer) lv_obj_set_pos(s_layer, 0, 0);
+                if (s_flash) lv_obj_set_style_bg_opa(s_flash, LV_OPA_TRANSP, 0);
             }
         } else {
             s_elapsed_ms += AXE_TICK_MS;

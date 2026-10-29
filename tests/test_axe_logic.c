@@ -85,12 +85,15 @@ static void test_distance_wave_and_preview(void) {
     assert(axe_preview_digit(-10) == 5);
     assert(AXE_ROTATE_STEP_DEG <= 2);
     assert(AXE_ROTATE_HOLD_STEPS >= 3);
-    assert(AXE_DISTANCE_PERIOD >= 40 && AXE_DISTANCE_PERIOD <= 72);
-    assert(AXE_JUMP_STEPS >= 16);
+    assert(AXE_DISTANCE_ADVANCE >= 2);
+    assert(AXE_DISTANCE_PERIOD >= 48 && AXE_DISTANCE_PERIOD <= 96);
     int half = AXE_DISTANCE_PERIOD / 2;
-    int fine = axe_oscillating_distance(half * 4, 1, AXE_DISTANCE_PERIOD);
-    assert(fine == 4);
-    assert(axe_oscillating_distance(half * 4, half, AXE_DISTANCE_PERIOD) == half * 4);
+    assert(half / AXE_DISTANCE_ADVANCE <= 16);
+    int maxd = half * 4;
+    assert(axe_oscillating_distance(maxd, AXE_DISTANCE_ADVANCE, AXE_DISTANCE_PERIOD)
+           == 4 * AXE_DISTANCE_ADVANCE);
+    assert(4 * AXE_DISTANCE_ADVANCE <= 16);
+    assert(AXE_JUMP_STEPS >= 16);
     assert(axe_ease_out(0, 100, 0, 10) == 0);
     assert(axe_ease_out(0, 100, 10, 10) == 100);
     assert(axe_ease_out(0, 100, 5, 10) == 75);
@@ -159,13 +162,28 @@ static void test_round_and_phase(void) {
         }
     }
     assert(varied);
+    assert(AXE_CLUSTER_R <= 34 && AXE_CLUSTER_R >= 28);
+    assert(AXE_MIN_CENTER_GAP >= AXE_CLUSTER_R * 2 + 40);
+    for (uint32_t seed = 1; seed <= 40; seed++) {
+        axe_round_t round;
+        axe_rng_seed(&rng, seed * 17u);
+        axe_round_begin(&round, &rng, &field);
+        int64_t dx = (int64_t)round.king.x - round.camp.x;
+        int64_t dy = (int64_t)round.king.y - round.camp.y;
+        assert(dx * dx + dy * dy >= (int64_t)AXE_MIN_CENTER_GAP * AXE_MIN_CENTER_GAP);
+        assert(!axe_point_in_circle(round.king.x, round.king.y, round.camp.x, round.camp.y,
+                                   AXE_CLUSTER_R * 2));
+    }
 
     axe_field_t impossible = field;
     impossible.min_center_gap = 10000;
     axe_rng_seed(&rng, 3);
     axe_round_begin(&second, &rng, &impossible);
-    assert(second.king.x == impossible.min_x && second.king.y == impossible.min_y);
-    assert(second.camp.x == impossible.max_x && second.camp.y == impossible.max_y);
+    assert((second.king.x == impossible.min_x || second.king.x == impossible.max_x) &&
+           (second.king.y == impossible.min_y || second.king.y == impossible.max_y));
+    assert((second.camp.x == impossible.min_x || second.camp.x == impossible.max_x) &&
+           (second.camp.y == impossible.min_y || second.camp.y == impossible.max_y));
+    assert(second.king.x != second.camp.x || second.king.y != second.camp.y);
     assert(!axe_round_valid(&second, &impossible));
     for (int i = 0; i < AXE_MINION_COUNT; i++) {
         assert(axe_point_in_circle(second.minions[i].x, second.minions[i].y,
@@ -176,15 +194,15 @@ static void test_round_and_phase(void) {
     aimed.king.x = 120;
     aimed.king.y = 160;
     aimed.minions[0].x = 120;
-    aimed.minions[0].y = 115;
+    aimed.minions[0].y = 120;
     aimed.minions[1].x = 10;
     aimed.minions[1].y = 10;
     for (int i = 2; i < AXE_MINION_COUNT; i++) {
         aimed.minions[i].x = 0;
         aimed.minions[i].y = 0;
     }
-    axe_resolve(&aimed, 0, 45, &field);
-    assert(aimed.landing_x == 120 && aimed.landing_y == 115);
+    axe_resolve(&aimed, 0, 40, &field);
+    assert(aimed.landing_x == 120 && aimed.landing_y == 120);
     assert(aimed.hits == 1);
     axe_resolve(&aimed, 0, 0, &field);
     assert(aimed.landing_x == 120 && aimed.landing_y == 160);

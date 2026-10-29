@@ -11,17 +11,20 @@
 #include <stdint.h>
 
 #define AXE_MINION_COUNT 10
-#define AXE_CLUSTER_R 40
+#define AXE_CLUSTER_R 32
 #define AXE_FIELD_MIN_X 46
 #define AXE_FIELD_MAX_X 194
 #define AXE_FIELD_MIN_Y 100
 #define AXE_FIELD_MAX_Y 244
-#define AXE_MIN_CENTER_GAP 72
+/* Centers must stay well apart so the two circles cannot touch. */
+#define AXE_MIN_CENTER_GAP 120
 #define AXE_PREVIEW_MS 5000
 #define AXE_ROTATE_STEP_DEG 2
 /* While a volume key is held, this many fine steps are applied each UI tick. */
 #define AXE_ROTATE_HOLD_STEPS 4
-#define AXE_DISTANCE_PERIOD 56
+/* Fine quanta. The UI advances several quanta per tick so the wave is faster. */
+#define AXE_DISTANCE_PERIOD 84
+#define AXE_DISTANCE_ADVANCE 3
 #define AXE_JUMP_STEPS 20
 #define AXE_RESOLVE_HOLD_MS 1000
 #define AXE_TICK_MS 50
