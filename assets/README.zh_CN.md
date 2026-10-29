@@ -31,11 +31,15 @@
 | [`images/readme-hardware-specs.png`](images/readme-hardware-specs.png) | 2172 × 724，PNG RGBA | 保留为可选技术参考图，不再用于首页主视觉。于 2026-09-17 使用内置图像生成工具为本仓库生成；已根据文档中的硬件能力契约核对图中的六项标签与参数。 |
 | [`images/logo-wordmark.png`](images/logo-wordmark.png) | 1648 × 336，PNG RGBA | 从仓库原始 `images/logo.png` 中精确裁切并去除背景的黑色字标；用于中英文项目 README 的浅色主题。 |
 | [`images/logo-wordmark-dark.png`](images/logo-wordmark-dark.png) | 1648 × 336，PNG RGBA | 提取字标的白色版本；README 使用 `<picture>` 在 GitHub 深色主题下显示。 |
-| [`images/axe-king-q.jpg`](images/axe-king-q.jpg) | 1024 × 1024，JPEG | 用户提供的 Q 版斧王头像，仅作源图，运行时不解码。 |
-| [`images/axe-king-q-64.png`](images/axe-king-q-64.png) | 64 × 64，PNG RGBA | 最近邻缩小的对局精灵，与画面边缘相连的背景为透明。 |
-| [`images/axe-king-q-96.png`](images/axe-king-q-96.png) | 96 × 96，PNG RGBA | 封面和结算用的同一头像。 |
-| [`images/axe_king_q_64.c`](images/axe_king_q_64.c) | 64 × 64，LVGL 9 RGB565A8 | 放在 Flash 里的对局精灵，约 12 KB。由 `tools/gen_axe_avatar.py` 生成。 |
-| [`images/axe_king_q_96.c`](images/axe_king_q_96.c) | 96 × 96，LVGL 9 RGB565A8 | 放在 Flash 里的封面精灵，约 27 KB。生成方式相同。 |
+| [`images/axe-king-bead.png`](images/axe-king-bead.png) | 用户提供的 PNG | 封面、记位、瞄准和结算用的标准拼豆头像。运行时用生成的 RGB565A8，不解码这张源图。 |
+| [`images/axe-king-hands.jpg`](images/axe-king-hands.jpg) | 用户提供的 JPEG | 0 命中的结果头像。 |
+| [`images/axe-king-cry.jpg`](images/axe-king-cry.jpg) | 用户提供的 JPEG | 1–3 命中的结果头像。 |
+| [`images/axe-king-cute.jpg`](images/axe-king-cute.jpg) | 用户提供的 JPEG | 4–6 命中的结果头像。 |
+| [`images/axe-king-shades.jpg`](images/axe-king-shades.jpg) | 用户提供的 JPEG | 7–9 命中的结果头像。 |
+| [`images/axe-king-teeth.jpg`](images/axe-king-teeth.jpg) | 用户提供的 JPEG | 10 命中的结果头像。 |
+| [`images/axe_king_bead_64.c`](images/axe_king_bead_64.c) | 64 × 64，LVGL 9 RGB565A8 | 对局精灵，约 12 KB。由 `tools/gen_axe_avatar.py` 生成。 |
+| [`images/axe_king_bead_96.c`](images/axe_king_bead_96.c) | 96 × 96，LVGL 9 RGB565A8 | 封面精灵，约 27 KB。 |
+| [`images/axe_king_hands_96.c`](images/axe_king_hands_96.c) | 96 × 96，LVGL 9 RGB565A8 | 结果精灵。哭泣、卖萌、墨镜和露齿文件格式相同。 |
 
 - 使用描述性命名，并记录尺寸、像素格式、转换步骤与目标路径。
 - 优先采用适合 240 × 320 RGB565 显示的格式，并纳入 Flash 与内部 RAM 考量。

@@ -13,8 +13,13 @@
 
 LV_FONT_DECLARE(axe_king_font_16);
 LV_FONT_DECLARE(axe_king_font_24);
-LV_IMAGE_DECLARE(axe_king_q_64);
-LV_IMAGE_DECLARE(axe_king_q_96);
+LV_IMAGE_DECLARE(axe_king_bead_64);
+LV_IMAGE_DECLARE(axe_king_bead_96);
+LV_IMAGE_DECLARE(axe_king_hands_96);
+LV_IMAGE_DECLARE(axe_king_cry_96);
+LV_IMAGE_DECLARE(axe_king_cute_96);
+LV_IMAGE_DECLARE(axe_king_shades_96);
+LV_IMAGE_DECLARE(axe_king_teeth_96);
 
 #define AXE_Q_PLAY 64
 #define AXE_Q_COVER 96
@@ -241,7 +246,7 @@ static void layout_arrow(int cx, int cy, int angle, int length) {
 }
 
 static void create_avatar(lv_obj_t *parent, int cx, int cy) {
-    s_king = avatar(parent, cx, cy, &axe_king_q_64);
+    s_king = avatar(parent, cx, cy, &axe_king_bead_64);
 }
 
 static void create_arrow(lv_obj_t *parent, int cx, int cy, int angle, int length) {
@@ -285,15 +290,29 @@ static void forget_dynamic(void) {
     for (int i = 0; i < AXE_MINION_COUNT; i++) s_minions[i] = NULL;
 }
 
+static const lv_image_dsc_t *result_face(int band) {
+    switch (band) {
+    case AXE_BAND_HANDS: return &axe_king_hands_96;
+    case AXE_BAND_CRY: return &axe_king_cry_96;
+    case AXE_BAND_CUTE: return &axe_king_cute_96;
+    case AXE_BAND_SHADES: return &axe_king_shades_96;
+    case AXE_BAND_TEETH: return &axe_king_teeth_96;
+    default: return &axe_king_bead_96;
+    }
+}
+
+static lv_obj_t *king_ring(lv_obj_t *parent, int cx, int cy, lv_opa_t fill) {
+    return ring(parent, cx, cy, AXE_CLUSTER_R, COL_THREAT, fill, 3);
+}
+
 static void build_cover(void) {
-    avatar(s_layer, 120, 118, &axe_king_q_96);
+    avatar(s_layer, 120, 118, &axe_king_bead_96);
     center_text(text_label(s_layer, AXE_TEXT_TITLE, &axe_king_font_24, 12, 196, 216, COL_TEXT));
     center_text(text_label(s_layer, AXE_TEXT_COVER_HINT, &axe_king_font_16, 12, 250, 216, COL_GOLD));
 }
 
 static void build_preview(void) {
-    s_threat = ring(s_layer, s_round.king.x, s_round.king.y, AXE_CLUSTER_R, COL_THREAT,
-                    LV_OPA_TRANSP, 0);
+    s_threat = king_ring(s_layer, s_round.king.x, s_round.king.y, LV_OPA_30);
     ring(s_layer, s_round.camp.x, s_round.camp.y, AXE_CLUSTER_R, COL_RING, LV_OPA_TRANSP, 2);
     build_minions(s_layer, COL_MINION);
     create_avatar(s_layer, s_round.king.x, s_round.king.y);
@@ -301,6 +320,7 @@ static void build_preview(void) {
 }
 
 static void build_aim(void) {
+    s_threat = king_ring(s_layer, s_round.king.x, s_round.king.y, LV_OPA_30);
     create_avatar(s_layer, s_round.king.x, s_round.king.y);
     if (s_phase == AXE_PHASE_AIM_DISTANCE) {
         create_arrow(s_layer, s_round.king.x, s_round.king.y, s_round.angle_deg, 0);
@@ -318,9 +338,7 @@ static void build_resolve(void) {
     s_flash = block(s_layer, 0, 0, 240, 320, 0, 0xFFF4D0);
     lv_obj_set_style_bg_opa(s_flash, LV_OPA_TRANSP, 0);
     build_minions(s_layer, COL_MINION);
-    s_strike = ring(s_layer, s_round.landing_x, s_round.landing_y, AXE_CLUSTER_R, COL_THREAT,
-                    LV_OPA_TRANSP, 2);
-    lv_obj_set_style_border_opa(s_strike, LV_OPA_TRANSP, 0);
+    s_strike = king_ring(s_layer, s_round.king.x, s_round.king.y, LV_OPA_30);
     for (int i = 0; i < 2; i++) {
         s_burst[i] = ring(s_layer, s_round.landing_x, s_round.landing_y, 8, COL_GOLD,
                           LV_OPA_TRANSP, 2);
@@ -336,7 +354,7 @@ static void build_resolve(void) {
 
 static void build_result(void) {
     int band = axe_score_band(s_round.hits);
-    avatar(s_layer, 120, 108, &axe_king_q_96);
+    avatar(s_layer, 120, 108, result_face(band));
     char hits[24];
     axe_format_hits(hits, sizeof(hits), s_round.hits);
     center_text(text_label(s_layer, hits, &axe_king_font_24, 12, 176, 216, COL_GOLD));
@@ -473,12 +491,13 @@ static void on_tick(lv_timer_t *timer) {
         s_elapsed_ms += AXE_TICK_MS;
         if (s_threat) {
             int on = ((s_elapsed_ms / 200) % 2) == 0;
-            lv_obj_set_style_bg_opa(s_threat, on ? LV_OPA_50 : LV_OPA_TRANSP, 0);
+            lv_obj_set_style_bg_opa(s_threat, on ? LV_OPA_50 : LV_OPA_20, 0);
         }
         break;
     case AXE_PHASE_AIM_ANGLE:
         if (s_hold_dir != 0) {
-            s_round.angle_deg = axe_apply_rotation(s_round.angle_deg, s_hold_dir, AXE_ROTATE_STEP_DEG);
+            s_round.angle_deg = axe_apply_rotation(
+                s_round.angle_deg, s_hold_dir * AXE_ROTATE_HOLD_STEPS, AXE_ROTATE_STEP_DEG);
             s_hold_steps++;
             layout_arrow(s_round.king.x, s_round.king.y, s_round.angle_deg, AXE_ARROW_LEN);
         }
@@ -495,6 +514,7 @@ static void on_tick(lv_timer_t *timer) {
             int x = axe_ease_out(s_round.king.x, s_round.landing_x, s_jump_step, AXE_JUMP_STEPS);
             int y = axe_ease_out(s_round.king.y, s_round.landing_y, s_jump_step, AXE_JUMP_STEPS);
             move_avatar(x, y);
+            place_ring(s_strike, x, y, AXE_CLUSTER_R);
             if (s_jump_step >= AXE_JUMP_STEPS) {
                 s_landed = true;
                 move_avatar(s_round.landing_x, s_round.landing_y);
@@ -572,6 +592,8 @@ void axe_ui_on_key(int button, int event) {
         s_phase = axe_next_phase(AXE_PHASE_COVER, AXE_INPUT_ANY);
         s_elapsed_ms = 0;
         s_hold_dir = 0;
+        /* The click or long-press that left the cover must not also skip memorize. */
+        s_swallow_confirm = true;
         rebuild();
         return;
     }
@@ -596,7 +618,7 @@ void axe_ui_on_key(int button, int event) {
         return;
     }
     if (!confirm_event(button, event)) return;
-    if (event == (int)BSP_BTN_CLICK && s_swallow_confirm) {
+    if (s_swallow_confirm) {
         s_swallow_confirm = false;
         return;
     }

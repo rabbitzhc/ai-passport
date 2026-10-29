@@ -19,7 +19,9 @@
 #define AXE_MIN_CENTER_GAP 72
 #define AXE_PREVIEW_MS 5000
 #define AXE_ROTATE_STEP_DEG 2
-#define AXE_DISTANCE_PERIOD 120
+/* While a volume key is held, this many fine steps are applied each UI tick. */
+#define AXE_ROTATE_HOLD_STEPS 4
+#define AXE_DISTANCE_PERIOD 56
 #define AXE_JUMP_STEPS 20
 #define AXE_RESOLVE_HOLD_MS 1000
 #define AXE_TICK_MS 50

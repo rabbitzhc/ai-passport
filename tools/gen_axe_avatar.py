@@ -134,14 +134,16 @@ const lv_image_dsc_t {symbol} = {{
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--src", type=Path, default=DEFAULT_SRC)
+    parser.add_argument("--symbol", default="axe_king_q")
+    parser.add_argument("--sizes", default="64,96")
     args = parser.parse_args()
     square = knock_out_background(Image.open(args.src))
     out_dir = ROOT / "assets" / "images"
     out_dir.mkdir(parents=True, exist_ok=True)
-    for size in SIZES:
+    for size in (int(item) for item in args.sizes.split(",") if item):
         frame = sprite(square, size)
-        frame.save(out_dir / f"axe-king-q-{size}.png")
-        emit(out_dir / f"axe_king_q_{size}.c", f"axe_king_q_{size}", frame)
+        frame.save(out_dir / f"{args.symbol.replace('_', '-')}-{size}.png")
+        emit(out_dir / f"{args.symbol}_{size}.c", f"{args.symbol}_{size}", frame)
 
 
 if __name__ == "__main__":
