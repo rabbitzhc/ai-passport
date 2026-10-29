@@ -38,35 +38,35 @@ static const int16_t SIN1024[360] = {
 };
 
 static const char *const COMMENTS_HANDS[AXE_COMMENT_VARIANTS] = {
-    "飞哥，你这一斧砍空了",
-    "飞哥，你连一个小兵都没碰到",
-    "飞哥，你的斧子去度假了",
+    "飞哥，你这斧子砍到空气了",
+    "飞哥，你是来欣赏小兵的吗",
+    "飞哥，你空挥也这么认真",
 };
 static const char *const COMMENTS_CRY[AXE_COMMENT_VARIANTS] = {
-    "飞哥，你只蹭到一点点",
-    "飞哥，你这波有点难绷",
-    "飞哥，你再瞄准一次吧",
+    "飞哥，你就蹭到皮毛而已",
+    "飞哥，你这准头有点幽默",
+    "飞哥，你是在跟小兵打招呼吗",
 };
 static const char *const COMMENTS_CUTE[AXE_COMMENT_VARIANTS] = {
-    "飞哥，你砍中了一半左右",
-    "飞哥，你这表情有点呆",
-    "飞哥，你打得还算稳",
+    "飞哥，你砍了一半就收工",
+    "飞哥，你这波半吊子",
+    "飞哥，你还想被夸吗",
 };
 static const char *const COMMENTS_SHADES[AXE_COMMENT_VARIANTS] = {
-    "飞哥，你这波很帅",
-    "飞哥，你几乎清完了",
-    "飞哥，你戴上墨镜也配",
+    "飞哥，你差点就装上了",
+    "飞哥，你这波挺会装",
+    "飞哥，你墨镜都准备好了",
 };
 static const char *const COMMENTS_TEETH[AXE_COMMENT_VARIANTS] = {
-    "飞哥，你十个全中",
-    "飞哥，你这斧王太狠了",
-    "飞哥，你完美收割",
+    "飞哥，你今天是斧王本人",
+    "飞哥，你十个全收也太狠",
+    "飞哥，你这收割我服了",
 };
 
 static const char *const DISPLAY_STRINGS[] = {
     AXE_TEXT_TITLE,
     AXE_TEXT_COVER_HINT,
-    AXE_TEXT_PREVIEW,
+    AXE_TEXT_REMEMBER,
     AXE_TEXT_AIM_CW,
     AXE_TEXT_AIM_CCW,
     AXE_TEXT_LOCK_ANGLE,
@@ -121,18 +121,18 @@ static const char *const *comment_table(int band, int *count) {
 }
 
 static void place_minions(axe_point_t out[AXE_MINION_COUNT], axe_point_t camp, int rotation) {
-    const int inner = (AXE_CLUSTER_R * 2) / 5;
-    const int outer = (AXE_CLUSTER_R * 7) / 10;
-    out[0] = camp;
+    /* Rings only: no minion sits on the cluster center, so that point is not a bullseye. */
+    const int inner = (AXE_CLUSTER_R * 45) / 100;
+    const int outer = (AXE_CLUSTER_R * 72) / 100;
     for (int i = 0; i < 4; i++) {
-        int angle = rotation + i * 90;
-        out[1 + i].x = camp.x + mul1024(inner, sin1024(angle));
-        out[1 + i].y = camp.y + mul1024(inner, -sin1024(angle + 90));
+        int angle = rotation + 20 + i * 90;
+        out[i].x = camp.x + mul1024(inner, sin1024(angle));
+        out[i].y = camp.y + mul1024(inner, -sin1024(angle + 90));
     }
-    for (int i = 0; i < 5; i++) {
-        int angle = rotation + 36 + i * 72;
-        out[5 + i].x = camp.x + mul1024(outer, sin1024(angle));
-        out[5 + i].y = camp.y + mul1024(outer, -sin1024(angle + 90));
+    for (int i = 0; i < 6; i++) {
+        int angle = rotation + i * 60;
+        out[4 + i].x = camp.x + mul1024(outer, sin1024(angle));
+        out[4 + i].y = camp.y + mul1024(outer, -sin1024(angle + 90));
     }
 }
 
@@ -207,6 +207,15 @@ int axe_lerp(int start, int end, int numerator, int denominator) {
     if (denominator <= 0 || numerator >= denominator) return end;
     if (numerator <= 0) return start;
     return start + (int)(((int64_t)(end - start) * numerator) / denominator);
+}
+
+int axe_ease_out(int start, int end, int numerator, int denominator) {
+    if (denominator <= 0 || numerator >= denominator) return end;
+    if (numerator <= 0) return start;
+    int64_t n = numerator;
+    int64_t d = denominator;
+    int64_t curved = n * (2 * d - n);
+    return start + (int)(((int64_t)(end - start) * curved) / (d * d));
 }
 
 int axe_apply_rotation(int angle_deg, int steps, int degrees_per_step) {
@@ -291,6 +300,9 @@ bool axe_round_valid(const axe_round_t *round, const axe_field_t *field) {
         return false;
     }
     for (int i = 0; i < AXE_MINION_COUNT; i++) {
+        if (round->minions[i].x == round->camp.x && round->minions[i].y == round->camp.y) {
+            return false;
+        }
         if (!axe_point_in_circle(round->minions[i].x, round->minions[i].y,
                                  round->camp.x, round->camp.y, field->cluster_radius)) {
             return false;
@@ -303,13 +315,14 @@ axe_phase_t axe_next_phase(axe_phase_t phase, axe_input_t input) {
     switch (phase) {
     case AXE_PHASE_COVER:
         return input == AXE_INPUT_ANY ? AXE_PHASE_PREVIEW : phase;
+    case AXE_PHASE_PREVIEW:
+        return input == AXE_INPUT_CONFIRM ? AXE_PHASE_AIM_ANGLE : phase;
     case AXE_PHASE_AIM_ANGLE:
         return input == AXE_INPUT_CONFIRM ? AXE_PHASE_AIM_DISTANCE : phase;
     case AXE_PHASE_AIM_DISTANCE:
         return input == AXE_INPUT_CONFIRM ? AXE_PHASE_RESOLVE : phase;
     case AXE_PHASE_RESULT:
         return input == AXE_INPUT_CONFIRM ? AXE_PHASE_COVER : phase;
-    case AXE_PHASE_PREVIEW:
     case AXE_PHASE_RESOLVE:
     default:
         return phase;

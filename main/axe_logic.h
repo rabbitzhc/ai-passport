@@ -14,13 +14,13 @@
 #define AXE_CLUSTER_R 40
 #define AXE_FIELD_MIN_X 46
 #define AXE_FIELD_MAX_X 194
-#define AXE_FIELD_MIN_Y 88
+#define AXE_FIELD_MIN_Y 100
 #define AXE_FIELD_MAX_Y 244
 #define AXE_MIN_CENTER_GAP 72
 #define AXE_PREVIEW_MS 5000
-#define AXE_ROTATE_STEP_DEG 8
-#define AXE_DISTANCE_PERIOD 40
-#define AXE_JUMP_STEPS 8
+#define AXE_ROTATE_STEP_DEG 2
+#define AXE_DISTANCE_PERIOD 120
+#define AXE_JUMP_STEPS 20
 #define AXE_RESOLVE_HOLD_MS 1000
 #define AXE_TICK_MS 50
 #define AXE_COMMENT_VARIANTS 3
@@ -85,7 +85,7 @@ typedef struct {
 // additional Chinese literals.
 #define AXE_TEXT_TITLE "飞哥玩斧王"
 #define AXE_TEXT_COVER_HINT "按任意键继续"
-#define AXE_TEXT_PREVIEW "飞哥快上！"
+#define AXE_TEXT_REMEMBER "请记住小兵位置，按确认键继续"
 #define AXE_TEXT_AIM_CW "音量+顺时针"
 #define AXE_TEXT_AIM_CCW "音量-逆时针"
 #define AXE_TEXT_LOCK_ANGLE "确定锁定方向"
@@ -130,6 +130,7 @@ int axe_oscillating_distance(int max_distance, int tick, int period);
 int axe_preview_digit(int elapsed_ms);
 bool axe_preview_done(int elapsed_ms);
 int axe_lerp(int start, int end, int numerator, int denominator);
+int axe_ease_out(int start, int end, int numerator, int denominator);
 int axe_apply_rotation(int angle_deg, int steps, int degrees_per_step);
 int axe_score_band(int hits);
 const char *axe_comment(int band, int index);

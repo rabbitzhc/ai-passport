@@ -83,6 +83,16 @@ static void test_distance_wave_and_preview(void) {
     assert(!axe_preview_done(4999));
     assert(axe_preview_done(5000));
     assert(axe_preview_digit(-10) == 5);
+    assert(AXE_ROTATE_STEP_DEG <= 3);
+    assert(AXE_DISTANCE_PERIOD >= 100);
+    assert(AXE_JUMP_STEPS >= 16);
+    int fine = axe_oscillating_distance(120, 1, AXE_DISTANCE_PERIOD);
+    assert(fine > 0 && fine <= 3);
+    assert(axe_oscillating_distance(120, AXE_DISTANCE_PERIOD / 2, AXE_DISTANCE_PERIOD) == 120);
+    assert(axe_ease_out(0, 100, 0, 10) == 0);
+    assert(axe_ease_out(0, 100, 10, 10) == 100);
+    assert(axe_ease_out(0, 100, 5, 10) == 75);
+    assert(axe_ease_out(0, 100, 5, 10) > axe_lerp(0, 100, 5, 10));
 }
 
 static void test_score_and_comments(void) {
@@ -180,7 +190,8 @@ static void test_round_and_phase(void) {
 
     assert(axe_next_phase(AXE_PHASE_COVER, AXE_INPUT_ANY) == AXE_PHASE_PREVIEW);
     assert(axe_next_phase(AXE_PHASE_COVER, AXE_INPUT_CONFIRM) == AXE_PHASE_COVER);
-    assert(axe_next_phase(AXE_PHASE_PREVIEW, AXE_INPUT_CONFIRM) == AXE_PHASE_PREVIEW);
+    assert(axe_next_phase(AXE_PHASE_PREVIEW, AXE_INPUT_CONFIRM) == AXE_PHASE_AIM_ANGLE);
+    assert(axe_next_phase(AXE_PHASE_PREVIEW, AXE_INPUT_ANY) == AXE_PHASE_PREVIEW);
     assert(axe_next_phase(AXE_PHASE_AIM_ANGLE, AXE_INPUT_ROTATE_CW) == AXE_PHASE_AIM_ANGLE);
     assert(axe_next_phase(AXE_PHASE_AIM_ANGLE, AXE_INPUT_CONFIRM) == AXE_PHASE_AIM_DISTANCE);
     assert(axe_next_phase(AXE_PHASE_AIM_DISTANCE, AXE_INPUT_ROTATE_CCW) == AXE_PHASE_AIM_DISTANCE);

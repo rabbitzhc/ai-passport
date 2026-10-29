@@ -89,7 +89,7 @@ class AxeGlyphCoverageTest(unittest.TestCase):
     def test_ui_strings_are_covered_and_the_negative_case_is_not(self) -> None:
         required = ui_codepoints()
         self.assertIn(ord("飞"), required)
-        self.assertIn(ord("！"), required)
+        self.assertIn(ord("请"), required)
         self.assertIn(ord("，"), required)
         self.assertNotIn(NEGATIVE, required)
         fonts = [font_codepoints(path) for path in FONTS]

@@ -13,6 +13,13 @@
 
 LV_FONT_DECLARE(axe_king_font_16);
 LV_FONT_DECLARE(axe_king_font_24);
+LV_IMAGE_DECLARE(axe_king_q_64);
+LV_IMAGE_DECLARE(axe_king_q_96);
+
+#define AXE_Q_PLAY 64
+#define AXE_Q_COVER 96
+#define AXE_SPARKS 6
+#define AXE_IMPACT_MS 480
 
 static const char *TAG = "axe_ui";
 
@@ -30,25 +37,16 @@ static const char *TAG = "axe_ui";
 #define AXE_BACKLIGHT_ON 80
 #define AXE_BACKLIGHT_DIM 8
 
-typedef enum {
-    EXPR_NEUTRAL = 0,
-    EXPR_HANDS,
-    EXPR_CRY,
-    EXPR_CUTE,
-    EXPR_SHADES,
-    EXPR_TEETH,
-} expr_t;
-
 static lv_obj_t *s_scr;
 static lv_obj_t *s_layer;
-static lv_obj_t *s_digit_label;
 static lv_obj_t *s_king;
-static lv_obj_t *s_axe[3];
 static lv_obj_t *s_arrow[AXE_ARROW_DOTS];
-static lv_obj_t *s_range_end;
 static lv_obj_t *s_minions[AXE_MINION_COUNT];
 static lv_obj_t *s_threat;
 static lv_obj_t *s_strike;
+static lv_obj_t *s_flash;
+static lv_obj_t *s_burst[2];
+static lv_obj_t *s_spark[AXE_SPARKS];
 static lv_obj_t *s_batt_shell;
 static lv_obj_t *s_batt_fill;
 static lv_obj_t *s_batt_nub;
@@ -59,14 +57,14 @@ static axe_phase_t s_phase;
 static axe_round_t s_round;
 static axe_rng_t s_rng;
 static int s_elapsed_ms;
-static int s_spin_deg;
-static int s_digit = -1;
 static int s_hold_dir;
 static int s_hold_steps;
 static int s_dist_tick;
 static int s_max_distance;
 static int s_jump_step;
 static bool s_landed;
+static bool s_impact_done;
+static int s_impact_ms;
 static int s_idle_ms;
 static int s_backlight = AXE_BACKLIGHT_ON;
 static int s_battery_soc = -1;
@@ -211,20 +209,19 @@ static void move_circle(lv_obj_t *obj, int cx, int cy, int diameter) {
     lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
 }
 
-static void layout_axe(int cx, int cy, int angle) {
-    static const int reach[3] = {8, 14, 22};
-    static const int diameter[3] = {4, 4, 9};
-    for (int i = 0; i < 3; i++) {
-        int x = cx;
-        int y = cy;
-        axe_landing(cx, cy, angle, reach[i], &x, &y);
-        move_circle(s_axe[i], x, y, diameter[i]);
-    }
+static lv_obj_t *avatar(lv_obj_t *parent, int cx, int cy, const lv_image_dsc_t *src) {
+    lv_obj_t *img = lv_image_create(parent);
+    lv_image_set_src(img, src);
+    lv_obj_remove_flag(img, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_bg_opa(img, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_image_recolor_opa(img, LV_OPA_TRANSP, 0);
+    lv_obj_set_pos(img, cx - (int)src->header.w / 2, cy - (int)src->header.h / 2);
+    return img;
 }
 
-static void move_king(int cx, int cy, int angle) {
-    move_circle(s_king, cx, cy, 20);
-    layout_axe(cx, cy, angle);
+static void move_avatar(int cx, int cy) {
+    if (!s_king) return;
+    lv_obj_set_pos(s_king, cx - AXE_Q_PLAY / 2, cy - AXE_Q_PLAY / 2);
 }
 
 static void layout_arrow(int cx, int cy, int angle, int length) {
@@ -243,12 +240,8 @@ static void layout_arrow(int cx, int cy, int angle, int length) {
     }
 }
 
-static void create_token(lv_obj_t *parent, int cx, int cy, int angle) {
-    s_king = dot(parent, cx, cy, 20, COL_KING);
-    for (int i = 0; i < 3; i++) {
-        s_axe[i] = dot(parent, cx, cy, 4, i == 2 ? COL_GOLD : 0x6B4426);
-    }
-    move_king(cx, cy, angle);
+static void create_avatar(lv_obj_t *parent, int cx, int cy) {
+    s_king = avatar(parent, cx, cy, &axe_king_q_64);
 }
 
 static void create_arrow(lv_obj_t *parent, int cx, int cy, int angle, int length) {
@@ -274,80 +267,26 @@ static void recolor_hits(void) {
     }
 }
 
-static expr_t expr_from_band(int band) {
-    switch (band) {
-    case AXE_BAND_HANDS: return EXPR_HANDS;
-    case AXE_BAND_CRY: return EXPR_CRY;
-    case AXE_BAND_CUTE: return EXPR_CUTE;
-    case AXE_BAND_SHADES: return EXPR_SHADES;
-    case AXE_BAND_TEETH: return EXPR_TEETH;
-    default: return EXPR_NEUTRAL;
-    }
-}
-
-static void portrait(lv_obj_t *parent, int cx, int cy, expr_t expr) {
-    block(parent, cx - 46, cy + 64, 92, 12, 6, 0x0C101C);
-    block(parent, cx - 34, cy + 18, 68, 50, 18, 0x7A1020);
-    dot(parent, cx, cy + 34, 62, COL_KING);
-    dot(parent, cx, cy - 6, 68, 0x8C1424);
-    dot(parent, cx, cy + 4, 46, 0xF0C29A);
-    dot(parent, cx - 30, cy - 34, 16, COL_GOLD);
-    dot(parent, cx + 30, cy - 34, 16, COL_GOLD);
-    for (int i = 0; i < 4; i++) {
-        dot(parent, cx + 22 + i * 8, cy + 10 - i * 10, 6, 0x6B4426);
-    }
-    dot(parent, cx + 56, cy - 26, 22, 0xD9DDE6);
-    dot(parent, cx + 56, cy - 26, 8, COL_KING);
-
-    if (expr == EXPR_SHADES) {
-        block(parent, cx - 22, cy - 4, 44, 14, 6, 0x161616);
-    } else if (expr == EXPR_CUTE) {
-        dot(parent, cx - 10, cy, 12, 0x1A1A1A);
-        dot(parent, cx + 10, cy, 12, 0x1A1A1A);
-        dot(parent, cx - 16, cy + 12, 8, 0xF09AA8);
-        dot(parent, cx + 16, cy + 12, 8, 0xF09AA8);
-        dot(parent, cx, cy + 16, 4, 0x6A3A32);
-    } else if (expr == EXPR_CRY) {
-        dot(parent, cx - 10, cy, 6, 0x1A1A1A);
-        dot(parent, cx + 10, cy, 6, 0x1A1A1A);
-        block(parent, cx - 14, cy + 8, 6, 16, 3, 0x7EC8FF);
-        block(parent, cx + 8, cy + 10, 6, 18, 3, 0x7EC8FF);
-        block(parent, cx - 8, cy + 18, 16, 4, 2, 0x6A3A32);
-    } else if (expr == EXPR_TEETH) {
-        dot(parent, cx - 10, cy - 2, 6, 0x1A1A1A);
-        dot(parent, cx + 10, cy - 2, 6, 0x1A1A1A);
-        block(parent, cx - 12, cy + 8, 24, 16, 6, 0x5A2428);
-        block(parent, cx - 8, cy + 10, 5, 7, 1, 0xFFF8EE);
-        block(parent, cx - 2, cy + 10, 5, 7, 1, 0xFFF8EE);
-        block(parent, cx + 4, cy + 10, 5, 7, 1, 0xFFF8EE);
-    } else if (expr == EXPR_HANDS) {
-        dot(parent, cx - 10, cy, 8, 0x1A1A1A);
-        dot(parent, cx + 10, cy, 8, 0x1A1A1A);
-        dot(parent, cx, cy + 16, 8, 0x6A3A32);
-        dot(parent, cx - 32, cy - 18, 18, 0xF0C29A);
-        dot(parent, cx + 32, cy - 18, 18, 0xF0C29A);
-    } else {
-        block(parent, cx - 18, cy - 10, 10, 3, 1, 0x4A241C);
-        block(parent, cx + 8, cy - 10, 10, 3, 1, 0x4A241C);
-        dot(parent, cx - 10, cy, 6, 0x1A1A1A);
-        dot(parent, cx + 10, cy, 6, 0x1A1A1A);
-        block(parent, cx - 6, cy + 14, 12, 3, 1, 0x6A3A32);
-    }
+static void place_ring(lv_obj_t *obj, int cx, int cy, int radius) {
+    if (!obj) return;
+    lv_obj_set_size(obj, radius * 2, radius * 2);
+    lv_obj_set_pos(obj, cx - radius, cy - radius);
+    lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
 }
 
 static void forget_dynamic(void) {
-    s_digit_label = NULL;
     s_king = NULL;
     s_threat = NULL;
     s_strike = NULL;
-    s_range_end = NULL;
-    for (int i = 0; i < 3; i++) s_axe[i] = NULL;
+    s_flash = NULL;
+    for (int i = 0; i < 2; i++) s_burst[i] = NULL;
+    for (int i = 0; i < AXE_SPARKS; i++) s_spark[i] = NULL;
     for (int i = 0; i < AXE_ARROW_DOTS; i++) s_arrow[i] = NULL;
     for (int i = 0; i < AXE_MINION_COUNT; i++) s_minions[i] = NULL;
 }
 
 static void build_cover(void) {
-    portrait(s_layer, 120, 104, EXPR_NEUTRAL);
+    avatar(s_layer, 120, 118, &axe_king_q_96);
     center_text(text_label(s_layer, AXE_TEXT_TITLE, &axe_king_font_24, 12, 196, 216, COL_TEXT));
     center_text(text_label(s_layer, AXE_TEXT_COVER_HINT, &axe_king_font_16, 12, 250, 216, COL_GOLD));
 }
@@ -357,22 +296,13 @@ static void build_preview(void) {
                     LV_OPA_TRANSP, 0);
     ring(s_layer, s_round.camp.x, s_round.camp.y, AXE_CLUSTER_R, COL_RING, LV_OPA_TRANSP, 2);
     build_minions(s_layer, COL_MINION);
-    create_token(s_layer, s_round.king.x, s_round.king.y, s_spin_deg);
-    text_label(s_layer, AXE_TEXT_PREVIEW, &axe_king_font_16, 12, 8, 150, COL_TEXT);
-    char digit[16];
-    s_digit = axe_preview_digit(s_elapsed_ms);
-    snprintf(digit, sizeof(digit), "%d", s_digit);
-    s_digit_label = text_label(s_layer, digit, &axe_king_font_24, 190, 4, 40, 0xFFD166);
+    create_avatar(s_layer, s_round.king.x, s_round.king.y);
+    center_text(text_label(s_layer, AXE_TEXT_REMEMBER, &axe_king_font_16, 8, 4, 224, COL_TEXT));
 }
 
 static void build_aim(void) {
-    create_token(s_layer, s_round.king.x, s_round.king.y, s_round.angle_deg);
+    create_avatar(s_layer, s_round.king.x, s_round.king.y);
     if (s_phase == AXE_PHASE_AIM_DISTANCE) {
-        int tip_x = s_round.king.x;
-        int tip_y = s_round.king.y;
-        axe_landing(s_round.king.x, s_round.king.y, s_round.angle_deg, s_max_distance,
-                    &tip_x, &tip_y);
-        s_range_end = dot(s_layer, tip_x, tip_y, 6, 0x8C7340);
         create_arrow(s_layer, s_round.king.x, s_round.king.y, s_round.angle_deg, 0);
         text_label(s_layer, AXE_TEXT_DISTANCE, &axe_king_font_16, 12, 8, 216, COL_TEXT);
         text_label(s_layer, AXE_TEXT_LOCK_DISTANCE, &axe_king_font_16, 12, 30, 216, COL_GOLD);
@@ -385,25 +315,36 @@ static void build_aim(void) {
 }
 
 static void build_resolve(void) {
+    s_flash = block(s_layer, 0, 0, 240, 320, 0, 0xFFF4D0);
+    lv_obj_set_style_bg_opa(s_flash, LV_OPA_TRANSP, 0);
     build_minions(s_layer, COL_MINION);
     s_strike = ring(s_layer, s_round.landing_x, s_round.landing_y, AXE_CLUSTER_R, COL_THREAT,
                     LV_OPA_TRANSP, 2);
     lv_obj_set_style_border_opa(s_strike, LV_OPA_TRANSP, 0);
-    create_token(s_layer, s_round.king.x, s_round.king.y, s_round.angle_deg);
+    for (int i = 0; i < 2; i++) {
+        s_burst[i] = ring(s_layer, s_round.landing_x, s_round.landing_y, 8, COL_GOLD,
+                          LV_OPA_TRANSP, 2);
+        lv_obj_add_flag(s_burst[i], LV_OBJ_FLAG_HIDDEN);
+    }
+    for (int i = 0; i < AXE_SPARKS; i++) {
+        s_spark[i] = dot(s_layer, s_round.landing_x, s_round.landing_y, 4, 0xFFE7A0);
+        lv_obj_add_flag(s_spark[i], LV_OBJ_FLAG_HIDDEN);
+    }
+    create_avatar(s_layer, s_round.king.x, s_round.king.y);
     text_label(s_layer, AXE_TEXT_RESOLVE, &axe_king_font_16, 12, 8, 216, COL_TEXT);
 }
 
 static void build_result(void) {
     int band = axe_score_band(s_round.hits);
-    portrait(s_layer, 120, 86, expr_from_band(band));
+    avatar(s_layer, 120, 108, &axe_king_q_96);
     char hits[24];
     axe_format_hits(hits, sizeof(hits), s_round.hits);
     center_text(text_label(s_layer, hits, &axe_king_font_24, 12, 176, 216, COL_GOLD));
     const char *comment = axe_comment(band, s_round.comment_index);
     if (comment) {
-        center_text(text_label(s_layer, comment, &axe_king_font_16, 12, 210, 216, COL_TEXT));
+        center_text(text_label(s_layer, comment, &axe_king_font_16, 12, 214, 216, COL_TEXT));
     }
-    center_text(text_label(s_layer, AXE_TEXT_AGAIN, &axe_king_font_16, 12, 256, 216, COL_GOLD));
+    center_text(text_label(s_layer, AXE_TEXT_AGAIN, &axe_king_font_16, 12, 258, 216, COL_GOLD));
 }
 
 static void rebuild(void) {
@@ -476,14 +417,48 @@ static void show_landing(void) {
         lv_obj_set_style_border_opa(s_strike, LV_OPA_COVER, 0);
     }
     recolor_hits();
+    s_impact_ms = 0;
+    s_impact_done = false;
 }
 
-static void enter_aim(void) {
-    s_phase = AXE_PHASE_AIM_ANGLE;
-    s_round.angle_deg = 0;
-    s_hold_dir = 0;
-    s_hold_steps = 0;
-    rebuild();
+static void play_impact(void) {
+    int t = s_impact_ms;
+    int span = AXE_IMPACT_MS;
+    if (t > span) t = span;
+    int shake = 0;
+    if (t < 240) {
+        static const int kick[] = {4, -4, 3, -2, 1, 0};
+        shake = kick[(t / 40) % 6];
+    }
+    place_ring(s_strike, s_round.landing_x + shake, s_round.landing_y, AXE_CLUSTER_R);
+    if (s_flash) {
+        int flash = t < 80 ? 90 : (t < 200 ? 40 - (t - 80) / 6 : 0);
+        if (flash < 0) flash = 0;
+        lv_obj_set_style_bg_opa(s_flash, (lv_opa_t)flash, 0);
+    }
+    for (int i = 0; i < 2; i++) {
+        if (!s_burst[i]) continue;
+        int local = t - i * 80;
+        if (local < 0) {
+            lv_obj_add_flag(s_burst[i], LV_OBJ_FLAG_HIDDEN);
+            continue;
+        }
+        int radius = 10 + (local * 50) / span;
+        place_ring(s_burst[i], s_round.landing_x, s_round.landing_y, radius);
+        int opa = 220 - (local * 220) / span;
+        if (opa < 0) opa = 0;
+        lv_obj_set_style_bg_opa(s_burst[i], LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_opa(s_burst[i], (lv_opa_t)opa, 0);
+    }
+    for (int i = 0; i < AXE_SPARKS; i++) {
+        if (!s_spark[i]) continue;
+        int reach = (t * (18 + i * 4)) / span;
+        int x = s_round.landing_x;
+        int y = s_round.landing_y;
+        axe_landing(s_round.landing_x, s_round.landing_y, i * 60, reach, &x, &y);
+        move_circle(s_spark[i], x, y, i % 2 ? 5 : 3);
+        if (t > span - 80) lv_obj_add_flag(s_spark[i], LV_OBJ_FLAG_HIDDEN);
+    }
 }
 
 static void enter_result(void) {
@@ -496,22 +471,10 @@ static void on_tick(lv_timer_t *timer) {
     switch (s_phase) {
     case AXE_PHASE_PREVIEW:
         s_elapsed_ms += AXE_TICK_MS;
-        s_spin_deg = axe_apply_rotation(s_spin_deg, 1, 18);
-        move_king(s_round.king.x, s_round.king.y, s_spin_deg);
         if (s_threat) {
             int on = ((s_elapsed_ms / 200) % 2) == 0;
             lv_obj_set_style_bg_opa(s_threat, on ? LV_OPA_50 : LV_OPA_TRANSP, 0);
         }
-        if (s_digit_label) {
-            int digit = axe_preview_digit(s_elapsed_ms);
-            if (digit != s_digit) {
-                s_digit = digit;
-                char buf[16];
-                snprintf(buf, sizeof(buf), "%d", digit);
-                lv_label_set_text(s_digit_label, buf);
-            }
-        }
-        if (axe_preview_done(s_elapsed_ms)) enter_aim();
         break;
     case AXE_PHASE_AIM_ANGLE:
         if (s_hold_dir != 0) {
@@ -529,13 +492,20 @@ static void on_tick(lv_timer_t *timer) {
     case AXE_PHASE_RESOLVE:
         if (!s_landed) {
             if (s_jump_step < AXE_JUMP_STEPS) s_jump_step++;
-            int x = axe_lerp(s_round.king.x, s_round.landing_x, s_jump_step, AXE_JUMP_STEPS);
-            int y = axe_lerp(s_round.king.y, s_round.landing_y, s_jump_step, AXE_JUMP_STEPS);
-            move_king(x, y, s_round.angle_deg);
+            int x = axe_ease_out(s_round.king.x, s_round.landing_x, s_jump_step, AXE_JUMP_STEPS);
+            int y = axe_ease_out(s_round.king.y, s_round.landing_y, s_jump_step, AXE_JUMP_STEPS);
+            move_avatar(x, y);
             if (s_jump_step >= AXE_JUMP_STEPS) {
                 s_landed = true;
-                s_elapsed_ms = 0;
+                move_avatar(s_round.landing_x, s_round.landing_y);
                 show_landing();
+            }
+        } else if (!s_impact_done) {
+            s_impact_ms += AXE_TICK_MS;
+            play_impact();
+            if (s_impact_ms >= AXE_IMPACT_MS) {
+                s_impact_done = true;
+                s_elapsed_ms = 0;
             }
         } else {
             s_elapsed_ms += AXE_TICK_MS;
@@ -567,7 +537,13 @@ static void rotate_by_hold(int direction) {
 
 static void lock_from_confirm(void) {
     axe_field_t field = axe_default_field();
-    if (s_phase == AXE_PHASE_AIM_ANGLE) {
+    if (s_phase == AXE_PHASE_PREVIEW) {
+        s_phase = axe_next_phase(AXE_PHASE_PREVIEW, AXE_INPUT_CONFIRM);
+        s_round.angle_deg = 0;
+        s_hold_dir = 0;
+        s_hold_steps = 0;
+        rebuild();
+    } else if (s_phase == AXE_PHASE_AIM_ANGLE) {
         s_hold_dir = 0;
         s_max_distance = axe_max_distance(s_round.king.x, s_round.king.y, s_round.angle_deg, &field);
         s_dist_tick = 0;
@@ -595,8 +571,6 @@ void axe_ui_on_key(int button, int event) {
         axe_round_begin(&s_round, &s_rng, &field);
         s_phase = axe_next_phase(AXE_PHASE_COVER, AXE_INPUT_ANY);
         s_elapsed_ms = 0;
-        s_spin_deg = 0;
-        s_digit = -1;
         s_hold_dir = 0;
         rebuild();
         return;

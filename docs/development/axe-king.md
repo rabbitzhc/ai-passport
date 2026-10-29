@@ -10,15 +10,15 @@ The firmware built from this tree is an offline mini-game. `app_main` draws that
 
 The panel is 240 by 320. The product specification names the three keys UP, DOWN, and OK. This game treats UP as volume-plus and DOWN as volume-minus. That is a control choice; it does not change `bsp_pins.h`.
 
-1. Cover. A large original portrait, the title, and a continue hint. Any key press starts a round.
-2. Setup, five seconds. A red king token, slightly larger than each minion, and ten green minions stand inside one fixed circle. The king cluster and the minion cluster are placed at new positions every round. The king spins in place. A translucent red circle with the same radius flashes around the king. The status line is on the left and the countdown is on the right.
-3. Aim. Minions hide and the king stays put. Volume-plus rotates a clockwise arrow; volume-minus rotates it the other way. Holding a volume key keeps rotating. OK locks the direction. A distance marker then stretches and shrinks along the arrow. OK again locks the current distance.
-4. Resolve. Minions return to their setup positions, the king moves to the locked landing point, the same-radius circle is drawn there, and minions whose centers lie inside that circle turn red.
-5. Result. The portrait expression follows the hit count: 0 with hands on the head, 1-3 crying, 4-6 blank, 7-9 sunglasses, and 10 with teeth showing. One comment is chosen from the band that matches the count. OK returns to the cover for another round.
+1. Cover. The Q-version portrait, the title, and a continue hint. Any key press starts a round.
+2. Setup. The same portrait stays still beside ten green minions inside one fixed circle. Both clusters are placed at new positions every round, and no minion marks the cluster center. A translucent red circle with the same radius flashes around the portrait. A prompt asks the player to remember the minion positions and press OK. There is no countdown and the portrait does not spin.
+3. Aim. Minions hide and the portrait stays put. Volume-plus rotates a clockwise arrow by 2 degrees per step; volume-minus rotates it the other way. Holding a key keeps stepping. OK locks the direction. A distance marker then stretches and shrinks along the arrow in small increments. OK again locks the current distance. There is no extra marker at the far end of the reach.
+4. Resolve. Minions return to their setup positions. The portrait eases to the locked landing point instead of jumping in one frame. On arrival the same-radius circle is drawn, minions whose centers lie inside turn red, and a short flash, expanding rings, and sparks play.
+5. Result. The Q portrait stays on screen. One short teasing comment is chosen from the band that matches the hit count. OK returns to the cover for another round.
 
 Wi-Fi and Bluetooth are not initialized. The game does not write NVS. A merged image flashed from `0x0` can still reset the NVS region; see the [flashing policy](engineering/firmware-layout.md#flashing-and-stored-data).
 
-The battery indicator is at the bottom-right so it does not cover the countdown. `bsp_battery_soc()` of `-1` draws an empty indicator and `--` instead of a percentage. On the cover, the backlight drops from 80 percent to 8 percent after 30 seconds without input and returns on the next key.
+The battery indicator is at the bottom-right so it does not cover the status line. `bsp_battery_soc()` of `-1` draws an empty indicator and `--` instead of a percentage. On the cover, the backlight drops from 80 percent to 8 percent after 30 seconds without input and returns on the next key.
 
 ## Font
 
